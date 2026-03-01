@@ -3,13 +3,16 @@ kind: Task
 metadata:
   name: flake8
 spec:
-  workspaces:
-    - name: source
+  params:
+    - name: repo-url
+      default: ""
   steps:
     - name: flake8
       image: python:3.9-slim
-      workingDir: $(workspaces.source.path)
       script: |
+        apt-get update -qq && apt-get install -y git -qq
+        git clone $(params.repo-url) /app
+        cd /app
         pip install flake8 --quiet
         flake8 . --count --max-line-length=127 --statistics --exclude=.git,.tekton
 ---
@@ -18,12 +21,15 @@ kind: Task
 metadata:
   name: pytest
 spec:
-  workspaces:
-    - name: source
+  params:
+    - name: repo-url
+      default: ""
   steps:
     - name: pytest
       image: python:3.9-slim
-      workingDir: $(workspaces.source.path)
       script: |
+        apt-get update -qq && apt-get install -y git -qq
+        git clone $(params.repo-url) /app
+        cd /app
         pip install Flask==2.1.2 Werkzeug==2.1.2 python-dotenv==0.20.0 pytest --quiet
         python -m pytest tests/ -v --tb=short

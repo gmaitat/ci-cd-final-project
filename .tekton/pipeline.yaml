@@ -32,18 +32,18 @@ spec:
       taskRef:
         name: flake8
         kind: Task
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
       runAfter:
         - clone
     - name: tests
       taskRef:
         name: pytest
         kind: Task
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
       runAfter:
         - lint
     - name: build

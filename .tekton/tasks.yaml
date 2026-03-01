@@ -1,0 +1,31 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: flake8
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: flake8
+      image: python:3.9-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        pip install flake8 --quiet
+        flake8 . --count --max-line-length=127 --statistics --exclude=.git,.tekton
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: pytest
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: pytest
+      image: python:3.9-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        ls -la
+        pip install -r requirements.txt --quiet
+        pip install pytest --quiet
+        python -m pytest tests/ -v --tb=short

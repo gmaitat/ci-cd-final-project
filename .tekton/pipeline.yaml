@@ -13,10 +13,8 @@ spec:
       type: string
     - name: build-destination
       type: string
-
   workspaces:
     - name: pipeline-workspace
-
   tasks:
     - name: clone
       taskRef:
@@ -30,37 +28,24 @@ spec:
           value: $(params.repo-url)
         - name: revision
           value: $(params.branch)
-
     - name: lint
       taskRef:
         name: flake8
-        kind: ClusterTask
+        kind: Task
       workspaces:
         - name: source
           workspace: pipeline-workspace
-      params:
-        - name: image
-          value: "python:3.9-slim"
-        - name: args
-          value: ["--count", "--max-line-length=127", "--statistics", "-v", "."]
       runAfter:
         - clone
-
     - name: tests
       taskRef:
         name: pytest
-        kind: ClusterTask
+        kind: Task
       workspaces:
         - name: source
           workspace: pipeline-workspace
-      params:
-        - name: image
-          value: "python:3.9-slim"
-        - name: args
-          value: ["-v", "--tb=short"]
       runAfter:
         - lint
-
     - name: build
       taskRef:
         name: buildah
@@ -73,7 +58,6 @@ spec:
           value: $(params.build-destination)
       runAfter:
         - tests
-
     - name: deploy
       taskRef:
         name: openshift-client

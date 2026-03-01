@@ -33,3 +33,23 @@ spec:
         cd /app
         pip install Flask==2.1.2 Werkzeug==2.1.2 python-dotenv==0.20.0 pytest --quiet
         python -m pytest tests/ -v --tb=short
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-image
+spec:
+  params:
+    - name: repo-url
+      default: ""
+    - name: image
+      default: ""
+  steps:
+    - name: build
+      image: quay.io/buildah/stable:latest
+      securityContext:
+        privileged: true
+      script: |
+        git clone $(params.repo-url) /app
+        buildah bud -t $(params.image) /app
+        buildah push $(params.image)

@@ -13,8 +13,10 @@ spec:
       type: string
     - name: build-destination
       type: string
+
   workspaces:
     - name: pipeline-workspace
+
   tasks:
     - name: clone
       taskRef:
@@ -28,24 +30,39 @@ spec:
           value: $(params.repo-url)
         - name: revision
           value: $(params.branch)
+
     - name: lint
       taskRef:
-        name: flake8
-        kind: Task
+        name: openshift-client
+        kind: ClusterTask
       params:
-        - name: repo-url
-          value: $(params.repo-url)
+        - name: SCRIPT
+          value: |
+            cd $(workspaces.manifest-dir.path)
+            pip install flake8
+            flake8 service/ --count --max-line-length=127 --statistics
+      workspaces:
+        - name: manifest-dir
+          workspace: pipeline-workspace
       runAfter:
         - clone
+
     - name: tests
       taskRef:
-        name: pytest
-        kind: Task
+        name: openshift-client
+        kind: ClusterTask
       params:
-        - name: repo-url
-          value: $(params.repo-url)
+        - name: SCRIPT
+          value: |
+            cd $(workspaces.manifest-dir.path)
+            pip install pytest
+            python -m pytest tests/ -v --tb=short
+      workspaces:
+        - name: manifest-dir
+          workspace: pipeline-workspace
       runAfter:
         - lint
+
     - name: build
       taskRef:
         name: buildah
@@ -58,6 +75,7 @@ spec:
           value: $(params.build-destination)
       runAfter:
         - tests
+
     - name: deploy
       taskRef:
         name: openshift-client

@@ -1,0 +1,92 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"tekton.dev/v1beta1","kind":"Pipeline","metadata":{"annotations":{},"name":"cd-pipeline","namespace":"sn-labs-gmaitatorres"},"spec":{"params":[{"name":"repo-url","type":"string"},{"default":"main","name":"branch","type":"string"},{"name":"image-name","type":"string"},{"name":"build-destination","type":"string"}],"tasks":[{"name":"clone","params":[{"name":"url","value":"$(params.repo-url)"},{"name":"revision","value":"$(params.branch)"}],"taskRef":{"kind":"ClusterTask","name":"git-clone"},"workspaces":[{"name":"output","workspace":"pipeline-workspace"}]},{"name":"lint","params":[{"name":"repo-url","value":"$(params.repo-url)"}],"runAfter":["clone"],"taskRef":{"kind":"Task","name":"flake8"}},{"name":"tests","params":[{"name":"repo-url","value":"$(params.repo-url)"}],"runAfter":["lint"],"taskRef":{"kind":"Task","name":"pytest"}},{"name":"build","params":[{"name":"repo-url","value":"$(params.repo-url)"},{"name":"image","value":"$(params.build-destination)"}],"runAfter":["tests"],"taskRef":{"kind":"Task","name":"build-image"}},{"name":"deploy","params":[{"name":"SCRIPT","value":"oc rollout restart deployment/$(params.image-name)\n"}],"runAfter":["build"],"taskRef":{"kind":"ClusterTask","name":"openshift-client"}}],"workspaces":[{"name":"pipeline-workspace"}]}}
+  creationTimestamp: "2026-03-01T19:22:20Z"
+  generation: 7
+  name: cd-pipeline
+  namespace: sn-labs-gmaitatorres
+  resourceVersion: "2674711174"
+  uid: 2401b95f-b445-40f0-b13d-c7041861ab77
+spec:
+  params:
+  - name: repo-url
+    type: string
+  - default: main
+    name: branch
+    type: string
+  - name: image-name
+    type: string
+  - name: build-destination
+    workspaces:
+    - name: source
+      workspace: pipeline-workspace
+    type: string
+  tasks:
+  - name: clone
+    params:
+    - name: url
+      value: $(params.repo-url)
+    - name: revision
+      value: $(params.branch)
+    taskRef:
+      kind: ClusterTask
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: pipeline-workspace
+  - name: lint
+    workspaces:
+    - name: source
+      workspace: pipeline-workspace
+    params:
+    - name: repo-url
+      value: $(params.repo-url)
+    runAfter:
+    - clone
+    taskRef:
+      kind: Task
+      name: flake8
+  - name: tests
+    workspaces:
+    - name: source
+      workspace: pipeline-workspace
+    params:
+    - name: repo-url
+      value: $(params.repo-url)
+    runAfter:
+    - lint
+    taskRef:
+      kind: Task
+      name: pytest
+  - name: build
+    workspaces:
+    - name: source
+      workspace: pipeline-workspace
+    params:
+    - name: repo-url
+      value: $(params.repo-url)
+    - name: image
+      value: $(params.build-destination)
+    runAfter:
+    - tests
+    taskRef:
+      kind: Task
+      name: build-image
+    workspaces:
+    - name: source
+      workspace: pipeline-workspace
+  - name: deploy
+    params:
+    - name: SCRIPT
+      value: |
+        oc rollout restart deployment/$(params.image-name)
+    runAfter:
+    - build
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+  workspaces:
+  - name: pipeline-workspace

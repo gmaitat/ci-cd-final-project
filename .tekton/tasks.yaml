@@ -25,7 +25,5 @@ spec:
       image: python:3.9-slim
       workingDir: $(workspaces.source.path)
       script: |
-        ls -la
-        pip install -r requirements.txt --quiet
-        pip install pytest --quiet
+        pip install Flask==2.1.2 Werkzeug==2.1.2 python-dotenv==0.20.0 pytest --quiet
         python -m pytest tests/ -v --tb=short
